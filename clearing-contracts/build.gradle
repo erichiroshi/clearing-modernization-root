@@ -1,0 +1,12 @@
+plugins {
+    id 'com.github.davidmc24.gradle.plugin.avro'
+}
+
+description = 'Contratos de dados (schemas Avro) compartilhados entre os microsserviços'
+
+dependencies {
+    implementation 'org.apache.avro:avro:1.12.0'
+}
+
+// Por convenção do plugin, arquivos .avsc em src/main/avro são compilados
+// automaticamente para src/generated-main-avro-java durante compileJava.

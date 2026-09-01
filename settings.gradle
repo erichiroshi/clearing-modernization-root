@@ -1,0 +1,6 @@
+rootProject.name = 'clearing-modernization'
+
+include 'clearing-contracts'
+include 'clearing-domain'
+include 'trade-ingestion-service'
+include 'trade-query-service'

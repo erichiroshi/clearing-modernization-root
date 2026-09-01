@@ -1,0 +1,9 @@
+description = 'Módulo de domínio puro (DDD/Clean Architecture) — entidades, regras e Use Cases. ' +
+        'Sem dependência de Spring, JPA ou drivers de banco de dados.'
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.13.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.15.2'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+}

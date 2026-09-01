@@ -1,0 +1,36 @@
+plugins {
+    // Plugins declarados aqui e aplicados seletivamente em cada submódulo (apply false)
+    id 'java' apply false
+    id 'org.springframework.boot' version '4.1.1' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    // gradle-avro-plugin foi doado ao projeto Apache Avro; confirme a versão mais recente
+    // em https://github.com/davidmc24/gradle-avro-plugin/releases antes do primeiro build
+    id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1' apply false
+}
+
+allprojects {
+    group = 'br.com.erichiroshi.clearing'
+    version = '0.1.0-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}
