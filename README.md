@@ -25,11 +25,36 @@ Clearing de produtos financeiros, usando Arquitetura Orientada a Eventos
 
 ## Estado atual
 
-Este é o esqueleto inicial do monorepo: estrutura de módulos e build files
-Gradle. Nenhum código de aplicação foi gerado ainda — as próximas tasks
-(Épico 1: `docker-compose.yml`, schema Avro, pipeline CI/CD) serão
-desenvolvidas incrementalmente, cada uma em sua própria branch
-`feature/nome-da-task` a partir de `develop`, seguindo GitFlow.
+Estrutura de módulos e build files Gradle prontos. Ambiente de
+desenvolvimento local disponível via `docker-compose.yml` (Task 1.1).
+As demais tasks do Épico 1 (schema Avro, pipeline CI/CD) e dos épicos
+seguintes serão desenvolvidas incrementalmente, cada uma em sua própria
+branch `feature/nome-da-task` a partir de `develop`, seguindo GitFlow.
+
+### Épico 1 — Infraestrutura Automatizada e Contratos de Dados
+
+- [x] **Task 1.1** — Ambiente Docker de Alta Disponibilidade
+- [ ] Task 1.2 — Contrato de Dados com Apache Avro
+- [ ] Task 1.3 — Pipeline CI/CD com Análise de Qualidade
+
+## Ambiente local (Task 1.1)
+
+`docker-compose.yml` sobe:
+
+- **PostgreSQL 17** — porta `5432` (db/user/senha: `clearing`)
+- **MongoDB 8** — porta `27017` (usuário root: `clearing`/`clearing`)
+- **Kafka em modo KRaft, 3 nós** (`kafka-1`, `kafka-2`, `kafka-3`, roles
+  broker+controller combinados) — portas `9092`, `9093`, `9094` no host
+- **Confluent Schema Registry** — porta `8081`
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+O `CLUSTER_ID` está fixo no compose (necessário ser idêntico entre os
+3 nós em modo KRaft). Fator de replicação padrão configurado para `3`
+nos tópicos internos, condizente com os 3 brokers do cluster.
 
 ## Antes do primeiro build
 
