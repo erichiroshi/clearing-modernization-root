@@ -34,7 +34,7 @@ branch `feature/nome-da-task` a partir de `develop`, seguindo GitFlow.
 ### Épico 1 — Infraestrutura Automatizada e Contratos de Dados
 
 - [x] **Task 1.1** — Ambiente Docker de Alta Disponibilidade
-- [ ] Task 1.2 — Contrato de Dados com Apache Avro
+- [x] **Task 1.2** — Contrato de Dados com Apache Avro
 - [ ] Task 1.3 — Pipeline CI/CD com Análise de Qualidade
 
 ## Ambiente local (Task 1.1)
@@ -55,6 +55,19 @@ docker compose ps
 O `CLUSTER_ID` está fixo no compose (necessário ser idêntico entre os
 3 nós em modo KRaft). Fator de replicação padrão configurado para `3`
 nos tópicos internos, condizente com os 3 brokers do cluster.
+
+## Contrato de dados (Task 1.2)
+
+O evento `TradeExecutedEvent` (`clearing-contracts/src/main/avro/trade-executed.avsc`)
+é o contrato publicado no tópico `market.trades.v1` pelo `trade-ingestion-service`
+e consumido pelo `trade-query-service`. Campos monetários (`quantity`, `price`,
+`totalAmount`) usam o logicalType `decimal` (mapeado para `BigDecimal`), e
+`executedAt` usa `timestamp-millis`.
+
+A classe Java `TradeExecutedEvent` é gerada automaticamente a partir do
+`.avsc` durante `compileJava` (plugin `com.github.davidmc24.gradle.plugin.avro`),
+em `clearing-contracts/build/generated-main-avro-java` — não deve ser
+versionada nem editada manualmente.
 
 ## Antes do primeiro build
 
