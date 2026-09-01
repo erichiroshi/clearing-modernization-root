@@ -3,22 +3,27 @@ plugins {
     id 'java' apply false
     id 'org.springframework.boot' version '4.1.1' apply false
     id 'io.spring.dependency-management' version '1.1.7' apply false
-    // gradle-avro-plugin foi doado ao projeto Apache Avro; confirme a versão mais recente
-    // em https://github.com/davidmc24/gradle-avro-plugin/releases antes do primeiro build
-    id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1' apply false
+
+    // Todo submódulo precisará de Lombok e ferramentas de teste básicas
+    id("io.freefair.lombok") version "9.5.0"
+
 }
 
 allprojects {
     group = 'br.com.erichiroshi.clearing'
-    version = '0.1.0-SNAPSHOT'
+    version = '1.0.0-SNAPSHOT'
 
     repositories {
         mavenCentral()
+        // Repositório da Confluent para buscar as dependências do Avro e Schema Registry
+        maven { url "https://confluent.io" }
     }
 }
 
+// Configurações aplicadas a TODOS os submódulos do projeto
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
 
     java {
         toolchain {
@@ -26,11 +31,24 @@ subprojects {
         }
     }
 
-    tasks.withType(Test).configureEach {
-        useJUnitPlatform()
+    // Configurações globais de dependências para o Spring Boot 4
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:4.0.0"
+        }
     }
 
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = 'UTF-8'
+    dependencies {
+        // JUnit 5 para a suíte de testes (Padrão AAA)
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation 'org.mockito:mockito-core'
+        testImplementation 'org.mockito:mockito-junit-jupiter'
+    }
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
     }
 }

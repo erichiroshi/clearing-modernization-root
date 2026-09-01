@@ -1,12 +1,15 @@
 name: clearing-modernization
 
 x-kafka-env-common: &kafka-env-common
-  KAFKA_PROCESS_ROLES: broker,controller
-  CLUSTER_ID: DUx_540FQNKCFokoRCaJFQ
-  KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
-  KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
   KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+#  KAFKA_OFFERS_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+  KAFKA_PROCESS_ROLES: broker,controller
+  KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
   KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+#  KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+  CLUSTER_ID: DUx_540FQNKCFokoRCaJFQ  # ID estático gerado para o cluster KRaft
+
   KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
   KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
   KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
@@ -14,8 +17,9 @@ x-kafka-env-common: &kafka-env-common
   KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
 
 services:
+  # 🐘 BANCO DE DADOS: PostgreSQL (Escrita Transacional - ACID)
   postgres:
-    image: postgres:17
+    image: postgres:17-alpine
     container_name: clearing-postgres
     environment:
       POSTGRES_DB: clearing
@@ -30,9 +34,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - clearing-net
 
+  # 🍃 BANCO DE DADOS: MongoDB (Leitura Desacoplada - CQRS)
   mongodb:
     image: mongo:8
     container_name: clearing-mongodb
@@ -49,9 +52,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - clearing-net
 
+  # 🚀 MENSAGERIA: Apache Kafka Clusterizado (Modo KRaft - Sem Zookeeper)
   kafka-1:
     image: confluentinc/cp-kafka:7.9.0
     container_name: clearing-kafka-1
@@ -65,8 +67,6 @@ services:
       - "9092:9092"
     volumes:
       - kafka-1-data:/var/lib/kafka/data
-    networks:
-      - clearing-net
 
   kafka-2:
     image: confluentinc/cp-kafka:7.9.0
@@ -81,8 +81,6 @@ services:
       - "9093:9092"
     volumes:
       - kafka-2-data:/var/lib/kafka/data
-    networks:
-      - clearing-net
 
   kafka-3:
     image: confluentinc/cp-kafka:7.9.0
@@ -97,25 +95,36 @@ services:
       - "9094:9092"
     volumes:
       - kafka-3-data:/var/lib/kafka/data
-    networks:
-      - clearing-net
 
+  # 📑 GESTÃO DE CONTRATOS: Confluent Schema Registry
   schema-registry:
     image: confluentinc/cp-schema-registry:7.9.0
     container_name: clearing-schema-registry
+    ports:
+      - "8081:8081"
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      kafka-1:
+        condition: service_health
+      kafka-2:
+        condition: service_health
+      kafka-3:
+        condition: service_health
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka-1:29092,kafka-2:29092,kafka-3:29092"
       SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 3
+
+  # 🔎 OBSERVABILIDADE: Jaeger (Coleta de Traces OpenTelemetry)
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:1.55
+    container_name: jaeger-clearing
     ports:
-      - "8081:8081"
-    networks:
-      - clearing-net
+      - "16686:16686" # Interface Web do Jaeger para ver o fluxo
+      - "4317:4317"   # Porta gRPC do OpenTelemetry Protocol (OTLP)
+      - "4318:4318"   # Porta HTTP do OpenTelemetry Protocol (OTLP)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
 
 networks:
   clearing-net:
