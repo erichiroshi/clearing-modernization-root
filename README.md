@@ -35,8 +35,7 @@ branch `feature/nome-da-task` a partir de `develop`, seguindo GitFlow.
 
 - [x] **Task 1.1** — Ambiente Docker de Alta Disponibilidade
 - [x] **Task 1.2** — Contrato de Dados com Apache Avro
-- [ ] Task 1.3 — Pipeline CI/CD com Análise de Qualidade
-
+- [x] **Task 1.3** — Pipeline CI/CD com Análise de Qualidade
 ## Ambiente local (Task 1.1)
 
 `docker-compose.yml` sobe:
@@ -68,6 +67,18 @@ A classe Java `TradeExecutedEvent` é gerada automaticamente a partir do
 `.avsc` durante `compileJava` (plugin `com.github.davidmc24.gradle.plugin.avro`),
 em `clearing-contracts/build/generated-main-avro-java` — não deve ser
 versionada nem editada manualmente.
+
+## CI/CD (Task 1.3)
+
+Pipeline em `.github/workflows/ci.yml`: builda todos os módulos, roda os
+testes com cobertura (Jacoco) e envia a análise pro SonarCloud
+(organização `erichiroshi`). O merge do PR fica bloqueado se o Quality
+Gate falhar — cobertura insuficiente ou bugs/code smells acima do
+threshold.
+
+Pré-requisitos no GitHub: secret `SONAR_TOKEN` configurado e branch
+protection na `develop`/`main` exigindo o check `Build, testes e
+análise SonarCloud` passando antes do merge.
 
 ## Antes do primeiro build
 

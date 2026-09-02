@@ -103,12 +103,9 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      kafka-1:
-        condition: service_health
-      kafka-2:
-        condition: service_health
-      kafka-3:
-        condition: service_health
+      - kafka-1
+      - kafka-2
+      - kafka-3
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka-1:29092,kafka-2:29092,kafka-3:29092"
