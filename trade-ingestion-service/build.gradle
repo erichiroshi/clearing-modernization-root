@@ -3,12 +3,23 @@ plugins {
     id 'io.spring.dependency-management'
 }
 
+// retirar depois de implementado
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
+}
+
+
 description = 'Microsserviço de escrita — recebe intenções de trade, valida e persiste em PostgreSQL sob ACID, publica TradeExecutedEvent no Kafka'
 
 repositories {
     mavenCentral()
     // Necessário para kafka-avro-serializer / kafka-schema-registry-client
-    maven { url 'https://packages.confluent.io/maven/' }
+    maven {
+        url = uri ("https://packages.confluent.io/maven/") }
 }
 
 ext {

@@ -1,8 +1,8 @@
 plugins {
     // Plugins declarados aqui e aplicados seletivamente em cada submódulo (apply false)
 //    id 'java' apply false
-    id 'org.springframework.boot' version '4.1.1' apply false
-    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'org.springframework.boot' version '4.1.1' apply(false)
+    id 'io.spring.dependency-management' version '1.1.7' apply(false)
 
 //     Todo submódulo precisará de Lombok e ferramentas de teste básicas
     id("io.freefair.lombok") version "9.5.0"
@@ -10,6 +10,7 @@ plugins {
     // gradle-avro-plugin foi doado ao projeto Apache Avro; confirme a versão mais recente
     // em https://github.com/davidmc24/gradle-avro-plugin/releases antes do primeiro build
     id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1' apply false
+    id 'org.sonarqube' version '7.4.0.8496'
 }
 
 allprojects {
@@ -26,6 +27,7 @@ allprojects {
 // Configurações aplicadas a TODOS os submódulos do projeto
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'jacoco'
 //    apply plugin: 'io.spring.dependency-management'
 
     java {
@@ -56,9 +58,30 @@ subprojects {
 //    }
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        finalizedBy tasks.named('jacocoTestReport')
     }
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
+    }
+
+    jacocoTestReport {
+        dependsOn tasks.named('test')
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+}
+
+// Configuração do SonarCloud (Quality Gate bloqueia o merge do PR via check do GitHub Actions).
+// sonar.organization e sonar.projectKey devem bater exatamente com o que foi criado em
+// https://sonarcloud.io sob a organização "erichiroshi".
+sonar {
+    properties {
+        property "sonar.projectKey", "erichiroshi_clearing-modernization"
+        property "sonar.organization", "erichiroshi"
+//        property "sonar.coverage.jacoco.xmlReportPaths",
+//                subprojects.collect { "${it.layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml" }.join(",")
     }
 }

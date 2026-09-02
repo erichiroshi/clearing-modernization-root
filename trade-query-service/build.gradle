@@ -3,12 +3,24 @@ plugins {
     id 'io.spring.dependency-management'
 }
 
+// retirar depois de implementado
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
+}
+
+
 description = 'Microsserviço de leitura — consome TradeExecutedEvent do Kafka (Virtual Threads) e projeta a posição consolidada em MongoDB (CQRS)'
 
 repositories {
     mavenCentral()
     // Necessário para kafka-avro-serializer / kafka-schema-registry-client
-    maven { url 'https://packages.confluent.io/maven/' }
+    maven {
+        url = uri("https://packages.confluent.io/maven/")
+    }
 }
 
 ext {
@@ -26,5 +38,5 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring3x:4.19.0'
+//    testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring3x:4.19.0'
 }
