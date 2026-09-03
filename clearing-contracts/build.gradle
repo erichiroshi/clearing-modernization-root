@@ -7,7 +7,7 @@ description = 'Contratos de dados (schemas Avro) compartilhados entre os micross
 
 dependencies {
     // Dependências essenciais do Apache Avro para que as classes geradas compilem
-    implementation 'org.apache.avro:avro:1.12.1'
+    implementation 'org.apache.avro:avro:1.12.2'
 }
 
 // Configura o plugin do Avro para gerar strings em formato Java String (em vez de CharSequence)
