@@ -72,14 +72,14 @@ public class Trade {
             this.status = StatusTrade.REJEITADO;
             throw new SaldoInsuficienteException(comprador.getId(), valorTotal, comprador.getSaldoDisponivel());
         }
-        if (!vendedor.possuiPosicaoSuficiente(ativo.getTicker(), quantidade)) {
+        if (!vendedor.possuiPosicaoSuficiente(ativo.ticker(), quantidade)) {
             this.status = StatusTrade.REJEITADO;
             throw new PosicaoInsuficienteException(
-                    vendedor.getId(), ativo.getTicker(), quantidade, vendedor.posicaoDe(ativo.getTicker()));
+                    vendedor.getId(), ativo.ticker(), quantidade, vendedor.posicaoDe(ativo.ticker()));
         }
 
         comprador.debitar(valorTotal);
-        vendedor.reduzirPosicao(ativo.getTicker(), quantidade);
+        vendedor.reduzirPosicao(ativo.ticker(), quantidade);
         this.status = StatusTrade.VALIDADO;
     }
 

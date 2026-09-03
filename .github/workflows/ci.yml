@@ -55,3 +55,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --info
+
+      # Bloqueia o job (e, portanto, o merge do PR, via branch protection) se o
+      # Quality Gate do SonarCloud reprovar. SONAR_HOST_URL é obrigatório aqui:
+      # essa action consulta a API do Sonar diretamente e, sem ele, tenta
+      # falar com o SonarQube.com em vez do SonarCloud — era a causa provável
+      # da falha anterior.
+      - name: Verificar Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa
+        timeout-minutes: 5
+        with:
+          scanMetadataReportFile: build/sonar/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
