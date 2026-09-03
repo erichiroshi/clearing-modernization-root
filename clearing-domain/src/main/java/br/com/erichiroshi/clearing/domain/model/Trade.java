@@ -26,24 +26,27 @@ public class Trade {
     private StatusTrade status;
     private Instant liquidadoEm;
 
-    private Trade(Comprador comprador, Vendedor vendedor, Ativo ativo, BigDecimal quantidade, BigDecimal preco) {
-        this.id = UUID.randomUUID().toString();
+    private Trade(String id, Comprador comprador, Vendedor vendedor, Ativo ativo,
+                  BigDecimal quantidade, BigDecimal preco, BigDecimal valorTotal,
+                  StatusTrade status, Instant registradoEm, Instant liquidadoEm) {
+        this.id = id;
         this.comprador = comprador;
         this.vendedor = vendedor;
         this.ativo = ativo;
         this.quantidade = quantidade;
         this.preco = preco;
-        this.valorTotal = quantidade.multiply(preco);
-        this.registradoEm = Instant.now();
-        this.status = StatusTrade.PENDENTE;
+        this.valorTotal = valorTotal;
+        this.status = status;
+        this.registradoEm = registradoEm;
+        this.liquidadoEm = liquidadoEm;
     }
 
     /**
-     * Registra a intenção de trade. Não mexe em saldo/posição ainda —
-     * isso só acontece em {@link #validar()}.
+     * Registra a intenção de um trade novo, sempre como {@link StatusTrade#PENDENTE}.
+     * Não mexe em saldo/posição ainda — isso só acontece em {@link #validar()}.
      */
     public static Trade registrar(Comprador comprador, Vendedor vendedor, Ativo ativo,
-                                   BigDecimal quantidade, BigDecimal preco) {
+                                  BigDecimal quantidade, BigDecimal preco) {
         Objects.requireNonNull(comprador, "comprador não pode ser nulo");
         Objects.requireNonNull(vendedor, "vendedor não pode ser nulo");
         Objects.requireNonNull(ativo, "ativo não pode ser nulo");
@@ -53,7 +56,24 @@ public class Trade {
         if (preco == null || preco.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("preço deve ser maior que zero");
         }
-        return new Trade(comprador, vendedor, ativo, quantidade, preco);
+        BigDecimal valorTotal = quantidade.multiply(preco);
+        return new Trade(UUID.randomUUID().toString(), comprador, vendedor, ativo,
+                quantidade, preco, valorTotal, StatusTrade.PENDENTE, Instant.now(), null);
+    }
+
+    /**
+     * Reconstitui um Trade já existente a partir dos dados persistidos —
+     * usado pelos adaptadores de persistência (Task 2.2), nunca pela lógica
+     * de negócio, que sempre parte de {@link #registrar}.
+     */
+    public static Trade reconstituir(String id, Comprador comprador, Vendedor vendedor, Ativo ativo,
+                                     BigDecimal quantidade, BigDecimal preco, BigDecimal valorTotal,
+                                     StatusTrade status, Instant registradoEm, Instant liquidadoEm) {
+        Objects.requireNonNull(id, "id não pode ser nulo");
+        Objects.requireNonNull(status, "status não pode ser nulo");
+        Objects.requireNonNull(registradoEm, "registradoEm não pode ser nulo");
+        return new Trade(id, comprador, vendedor, ativo, quantidade, preco, valorTotal,
+                status, registradoEm, liquidadoEm);
     }
 
     /**

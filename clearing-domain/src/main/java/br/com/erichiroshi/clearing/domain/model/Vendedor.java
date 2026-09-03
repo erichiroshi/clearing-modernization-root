@@ -43,6 +43,14 @@ public class Vendedor {
         return posicoes.getOrDefault(ticker, BigDecimal.ZERO);
     }
 
+    /**
+     * Retorna uma cópia imutável das posições — usada pelos adaptadores de
+     * persistência (Task 2.2) para gravar o estado atual no banco.
+     */
+    public Map<String, BigDecimal> getPosicoes() {
+        return Map.copyOf(posicoes);
+    }
+
     public String getId() {
         return id;
     }
