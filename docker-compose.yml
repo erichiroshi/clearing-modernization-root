@@ -1,0 +1,158 @@
+name: clearing-modernization
+
+x-kafka-env-common: &kafka-env-common
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+#  KAFKA_OFFERS_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+  KAFKA_PROCESS_ROLES: broker,controller
+  KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
+  KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+#  KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+  CLUSTER_ID: DUx_540FQNKCFokoRCaJFQ  # ID estático gerado para o cluster KRaft
+
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+  KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+  KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+  KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+  KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+services:
+  # 🐘 BANCO DE DADOS: PostgreSQL (Escrita Transacional - ACID)
+  postgres:
+    image: postgres:17-alpine
+    container_name: clearing-postgres
+    environment:
+      POSTGRES_DB: clearing
+      POSTGRES_USER: clearing
+      POSTGRES_PASSWORD: clearing
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clearing -d clearing"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 🍃 BANCO DE DADOS: MongoDB (Leitura Desacoplada - CQRS)
+  mongodb:
+    image: mongo:8
+    container_name: clearing-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: clearing
+      MONGO_INITDB_ROOT_PASSWORD: clearing
+      MONGO_INITDB_DATABASE: clearing
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 🚀 MENSAGERIA: Apache Kafka Clusterizado (Modo KRaft - Sem Zookeeper)
+  kafka-1:
+    image: confluentinc/cp-kafka:7.9.0
+    container_name: clearing-kafka-1
+    hostname: kafka-1
+    environment:
+      <<: *kafka-env-common
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: "PLAINTEXT://kafka-1:29092,CONTROLLER://kafka-1:9093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-1:29092,PLAINTEXT_HOST://localhost:9092"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
+
+  kafka-2:
+    image: confluentinc/cp-kafka:7.9.0
+    container_name: clearing-kafka-2
+    hostname: kafka-2
+    environment:
+      <<: *kafka-env-common
+      KAFKA_NODE_ID: 2
+      KAFKA_LISTENERS: "PLAINTEXT://kafka-2:29092,CONTROLLER://kafka-2:9093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-2:29092,PLAINTEXT_HOST://localhost:9093"
+    ports:
+      - "9093:9092"
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data
+
+  kafka-3:
+    image: confluentinc/cp-kafka:7.9.0
+    container_name: clearing-kafka-3
+    hostname: kafka-3
+    environment:
+      <<: *kafka-env-common
+      KAFKA_NODE_ID: 3
+      KAFKA_LISTENERS: "PLAINTEXT://kafka-3:29092,CONTROLLER://kafka-3:9093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-3:29092,PLAINTEXT_HOST://localhost:9094"
+    ports:
+      - "9094:9092"
+    volumes:
+      - kafka-3-data:/var/lib/kafka/data
+
+  # 📑 GESTÃO DE CONTRATOS: Confluent Schema Registry
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.9.0
+    container_name: clearing-schema-registry
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka-1:29092,kafka-2:29092,kafka-3:29092"
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 3
+
+  # 🔎 OBSERVABILIDADE: Jaeger (Coleta de Traces OpenTelemetry)
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:1.55
+    container_name: jaeger-clearing
+    ports:
+      - "16686:16686" # Interface Web do Jaeger para ver o fluxo
+      - "4317:4317"   # Porta gRPC do OpenTelemetry Protocol (OTLP)
+      - "4318:4318"   # Porta HTTP do OpenTelemetry Protocol (OTLP)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  # ── SonarQube ───────────────────────────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:26.5.0.122743-community
+    container_name: sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # UI: http://localhost:9000 (admin/admin no primeiro acesso)
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/api/system/status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  clearing-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  mongo-data:
+  kafka-1-data:
+  kafka-2-data:
+  kafka-3-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_temp:

@@ -1,5 +1,6 @@
-rootProject.name = 'clearing-modernization'
+rootProject.name = 'clearing-modernization-root'
 
+// Declaração dos submódulos do ecossistema de Clearing
 include 'clearing-contracts'
 include 'clearing-domain'
 include 'trade-ingestion-service'

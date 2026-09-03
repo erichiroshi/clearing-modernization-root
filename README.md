@@ -25,11 +25,60 @@ Clearing de produtos financeiros, usando Arquitetura Orientada a Eventos
 
 ## Estado atual
 
-Este é o esqueleto inicial do monorepo: estrutura de módulos e build files
-Gradle. Nenhum código de aplicação foi gerado ainda — as próximas tasks
-(Épico 1: `docker-compose.yml`, schema Avro, pipeline CI/CD) serão
-desenvolvidas incrementalmente, cada uma em sua própria branch
-`feature/nome-da-task` a partir de `develop`, seguindo GitFlow.
+Estrutura de módulos e build files Gradle prontos. Ambiente de
+desenvolvimento local disponível via `docker-compose.yml` (Task 1.1).
+As demais tasks do Épico 1 (schema Avro, pipeline CI/CD) e dos épicos
+seguintes serão desenvolvidas incrementalmente, cada uma em sua própria
+branch `feature/nome-da-task` a partir de `develop`, seguindo GitFlow.
+
+### Épico 1 — Infraestrutura Automatizada e Contratos de Dados
+
+- [x] **Task 1.1** — Ambiente Docker de Alta Disponibilidade
+- [x] **Task 1.2** — Contrato de Dados com Apache Avro
+- [x] **Task 1.3** — Pipeline CI/CD com Análise de Qualidade
+## Ambiente local (Task 1.1)
+
+`docker-compose.yml` sobe:
+
+- **PostgreSQL 17** — porta `5432` (db/user/senha: `clearing`)
+- **MongoDB 8** — porta `27017` (usuário root: `clearing`/`clearing`)
+- **Kafka em modo KRaft, 3 nós** (`kafka-1`, `kafka-2`, `kafka-3`, roles
+  broker+controller combinados) — portas `9092`, `9093`, `9094` no host
+- **Confluent Schema Registry** — porta `8081`
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+O `CLUSTER_ID` está fixo no compose (necessário ser idêntico entre os
+3 nós em modo KRaft). Fator de replicação padrão configurado para `3`
+nos tópicos internos, condizente com os 3 brokers do cluster.
+
+## Contrato de dados (Task 1.2)
+
+O evento `TradeExecutedEvent` (`clearing-contracts/src/main/avro/trade-executed.avsc`)
+é o contrato publicado no tópico `market.trades.v1` pelo `trade-ingestion-service`
+e consumido pelo `trade-query-service`. Campos monetários (`quantity`, `price`,
+`totalAmount`) usam o logicalType `decimal` (mapeado para `BigDecimal`), e
+`executedAt` usa `timestamp-millis`.
+
+A classe Java `TradeExecutedEvent` é gerada automaticamente a partir do
+`.avsc` durante `compileJava` (plugin `com.github.davidmc24.gradle.plugin.avro`),
+em `clearing-contracts/build/generated-main-avro-java` — não deve ser
+versionada nem editada manualmente.
+
+## CI/CD (Task 1.3)
+
+Pipeline em `.github/workflows/ci.yml`: builda todos os módulos, roda os
+testes com cobertura (Jacoco) e envia a análise pro SonarCloud
+(organização `erichiroshi`). O merge do PR fica bloqueado se o Quality
+Gate falhar — cobertura insuficiente ou bugs/code smells acima do
+threshold.
+
+Pré-requisitos no GitHub: secret `SONAR_TOKEN` configurado e branch
+protection na `develop`/`main` exigindo o check `Build, testes e
+análise SonarCloud` passando antes do merge.
 
 ## Antes do primeiro build
 

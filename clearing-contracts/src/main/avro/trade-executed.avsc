@@ -1,0 +1,72 @@
+{
+  "namespace": "br.com.erichiroshi.clearing.contracts.event",
+  "type": "record",
+  "name": "TradeExecutedEvent",
+  "doc": "Evento publicado no tópico market.trades.v1 após a validação e persistência transacional (ACID) de um trade no microsserviço de ingestão. Consumido pelo microsserviço de consulta para projetar a visão agregada no MongoDB (CQRS).",
+  "fields": [
+    {
+      "name": "tradeId",
+      "type": "string",
+      "doc": "Identificador único do trade (UUID)"
+    },
+    {
+      "name": "buyerId",
+      "type": "string",
+      "doc": "Identificador do Comprador"
+    },
+    {
+      "name": "sellerId",
+      "type": "string",
+      "doc": "Identificador do Vendedor"
+    },
+    {
+      "name": "assetSymbol",
+      "type": "string",
+      "doc": "Código do ativo negociado (ex: PETR4, VALE3)."
+    },
+    {
+      "name": "quantity",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Quantidade do ativo negociada"
+    },
+    {
+      "name": "price",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 4
+      },
+      "doc": "Preço unitário de execução"
+    },
+    {
+      "name": "totalAmount",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 4
+      },
+      "doc": "Valor total do trade (quantity * price), calculado no momento da validação"
+    },
+    {
+      "name": "executedAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Instante em que a transação foi confirmada no PostgreSQL"
+    },
+    {
+      "name": "traceId",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "traceId de OpenTelemetry propagado para correlacionar os logs entre o microsserviço de ingestão e o de consulta"
+    }
+  ]
+}

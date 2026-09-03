@@ -1,12 +1,28 @@
 plugins {
+    // Plugin para compilação de arquivos .avsc em classes Java
     id 'com.github.davidmc24.gradle.plugin.avro'
 }
 
 description = 'Contratos de dados (schemas Avro) compartilhados entre os microsserviços'
 
 dependencies {
-    implementation 'org.apache.avro:avro:1.12.0'
+    // Dependências essenciais do Apache Avro para que as classes geradas compilem
+    implementation 'org.apache.avro:avro:1.12.1'
 }
 
+// Configura o plugin do Avro para gerar strings em formato Java String (em vez de CharSequence)
+avro {
+    // classes geradas com getters/campos privados; String em vez de CharSequence/Utf8
+    fieldVisibility = "PRIVATE"
+    stringType = "String"
+    // habilita o mapeamento do logicalType "decimal" (usado em quantity/price/totalAmount)
+    // para java.math.BigDecimal
+    enableDecimalLogicalType = true
+}
+
+
+// Garante que a tarefa de gerar código Java rode sempre antes da compilação convencional
+compileJava.dependsOn generateAvroJava
+
 // Por convenção do plugin, arquivos .avsc em src/main/avro são compilados
-// automaticamente para src/generated-main-avro-java durante compileJava.
+// automaticamente para build/generated-main-avro-java durante compileJava.
