@@ -8,13 +8,30 @@ import java.util.Objects;
 public record Ativo(
 
         String ticker,
-        String nome) {
+        String nome)
 
-    public Ativo(String ticker, String nome) {
+{
+    public Ativo {
         if (ticker == null || ticker.isBlank()) {
             throw new IllegalArgumentException("ticker do ativo não pode ser vazio");
         }
-        this.ticker = ticker;
-        this.nome = Objects.requireNonNull(nome, "nome do ativo não pode ser nulo");
+        Objects.requireNonNull(nome, "nome do ativo não pode ser nulo");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Ativo ativo)) return false;
+        return ticker.equals(ativo.ticker);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(ticker);
+    }
+
+    @Override
+    public String toString() {
+        return ticker;
     }
 }
