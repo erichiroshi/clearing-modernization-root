@@ -62,7 +62,7 @@ jobs:
       # falar com o SonarQube.com em vez do SonarCloud — era a causa provável
       # da falha anterior.
       - name: Verificar Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa
+        uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
         with:
           scanMetadataReportFile: build/sonar/report-task.txt
