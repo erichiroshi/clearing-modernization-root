@@ -123,6 +123,25 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
 
+  # ── SonarQube ───────────────────────────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:26.5.0.122743-community
+    container_name: sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # UI: http://localhost:9000 (admin/admin no primeiro acesso)
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/api/system/status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
 networks:
   clearing-net:
     driver: bridge
@@ -133,3 +152,7 @@ volumes:
   kafka-1-data:
   kafka-2-data:
   kafka-3-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_temp:
