@@ -16,6 +16,8 @@
   <img src="https://img.shields.io/badge/Avro-Schema%20Registry-blue?style=flat-square" alt="Avro">
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose">
   <img src="https://img.shields.io/badge/Jacoco-cobertura-brightgreen?style=flat-square" alt="Jacoco">
+  <a href="https://github.com/erichiroshi/clearing-modernization/releases/tag/v0.2.0"><img src="https://img.shields.io/badge/release-v0.2.0-informational?style=flat-square" alt="Release v0.2.0"></a>
+
 </p>
 
 > ⚠️ **Projeto em andamento.** Este README é atualizado a cada task entregue — veja a seção [Status do Projeto / Roadmap](#-status-do-projeto--roadmap) para o que já existe de verdade vs. o que ainda está planejado. Para o histórico completo de decisões e trade-offs de cada task, veja a pasta [`about/`](about/).
@@ -65,15 +67,13 @@ Este projeto reestrutura esse fluxo usando **Arquitetura Orientada a Eventos (ED
 - [x] **Task 2.1** — Domínio isolado (DDD): `Comprador`, `Vendedor`, `Ativo`, `Trade`
 - [x] **Task 2.2** — Persistência JPA + Flyway, lock pessimista, transação atômica
 - [x] **Task 2.3** — Producer Kafka via Transactional Outbox Pattern
-- [ ] Task 2.4 — Testes rigorosos (padrão AAA, cenários de exceção, integração ponta a ponta com Kafka)
-
+- [x] **Task 2.4** — Testes rigorosos (Mockito, mappers, integração ponta a ponta com Postgres + Kafka + Schema Registry reais)
 ### Épico 3 — Agregação, Observabilidade e Leitura (trade-query-service)
 - [ ] Task 3.1 — Consumidor Kafka com Virtual Threads (Java 25)
 - [ ] Task 3.2 — Modelo de leitura desacoplado (MongoDB) + API REST de consulta
 - [ ] Task 3.3 — Observabilidade (OpenTelemetry, correlação de trace entre os dois serviços)
 
-**O que isso significa na prática hoje:** o `trade-ingestion-service` já valida e persiste trades e registra o evento de integração via outbox; o `trade-query-service` ainda não existe como aplicação — o módulo Gradle está criado (`build.gradle`), mas sem código. **Não existe endpoint HTTP ainda em nenhum dos dois serviços** — o fluxo de ingestão hoje só é acionável via `ExecutarTradeUseCase` (testado por integração), não por uma API externa.
-
+**Épico 1 e Épico 2 estão completos e liberados como [`v0.2.0`](https://github.com/erichiroshi/clearing-modernization/releases/tag/v0.2.0)** — validados de ponta a ponta contra Postgres, Kafka e Schema Registry reais (não só mocks). O `trade-query-service` ainda não existe como aplicação — o módulo Gradle está criado (`build.gradle`), mas sem código. **Não existe endpoint HTTP ainda em nenhum dos dois serviços** — o fluxo de ingestão hoje só é acionável via `ExecutarTradeUseCase` (testado por integração), não por uma API externa.
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -91,8 +91,8 @@ Este projeto reestrutura esse fluxo usando **Arquitetura Orientada a Eventos (ED
 | Mensageria             | Apache Kafka (modo KRaft, 3 nós)     | —           | Contrato de eventos entre os dois serviços                      |
 | Contrato de dados       | Apache Avro + Confluent Schema Registry | —        | `TradeExecutedEvent`, schema evolution controlada                |
 | Padrão de integração    | Transactional Outbox                | —           | Resolve o dual-write problem entre Postgres e Kafka              |
-| Testes unitários        | JUnit 5 + AssertJ                    | —           | Domínio, use cases, entidades de outbox                          |
-| Testes de integração    | Testcontainers                      | —           | PostgreSQL real via container descartável                        |
+| Testes unitários        | JUnit 5 + AssertJ + Mockito           | —           | Domínio, use cases, entidades de outbox                          |
+| Testes de integração    | Testcontainers                      | —           | Postgres, Kafka e Schema Registry reais via container descartável |
 | Cobertura               | JaCoCo                              | —           | Relatório enviado ao SonarCloud                                  |
 | Qualidade estática       | SonarCloud                          | —           | Quality Gate bloqueando merge no CI                              |
 | CI/CD                  | GitHub Actions                      | —           | Build, testes, análise estática a cada push/PR                   |
@@ -282,17 +282,21 @@ Quando o endpoint existir, esta seção será atualizada com exemplos de request
 | Módulo | Classes de teste | Tipo |
 |---|---|---|
 | `clearing-domain` | `CompradorTest`, `VendedorTest`, `TradeTest` | Unitário puro (JUnit 5 + AssertJ) — 12 métodos |
-| `trade-ingestion-service` | `ExecutarTradeUseCaseIT` | Integração — **Testcontainers** (PostgreSQL real, Flyway real) |
+| `trade-ingestion-service` | `ExecutarTradeUseCaseTest` | Unitário (Mockito) — caminho feliz + 4 cenários de exceção |
+| `trade-ingestion-service` | `OutboxEventProcessorTest` | Unitário (Mockito) — sucesso, falha, retry até `FALHA` terminal |
+| `trade-ingestion-service` | `MappersTest` | Unitário — round-trip domínio ↔ entidade JPA |
 | `trade-ingestion-service` | `OutboxEventEntityTest` | Unitário — transições de estado do outbox |
 | `trade-ingestion-service` | `TradeEventCodecTest` | Unitário — round-trip JSON e conversão para Avro |
+| `trade-ingestion-service` | `ExecutarTradeUseCaseIT` | Integração — **Testcontainers** (PostgreSQL real, Flyway real) |
+| `trade-ingestion-service` | `TradeIngestionEndToEndIT` | **Integração ponta a ponta** — Postgres + Kafka + Schema Registry reais via Testcontainers; valida o fluxo completo desde `ExecutarTradeUseCase` até a mensagem chegar de verdade no tópico e o trade ser liquidado |
 
-```bash
+\`\`\`bash
 ./gradlew test jacocoTestReport
-```
+\`\`\`
 
-Os testes de integração exigem Docker em execução (Testcontainers sobe um PostgreSQL descartável); na CI, o `ubuntu-latest` do GitHub Actions já vem com Docker disponível.
+Os testes de integração exigem Docker em execução (Testcontainers sobe containers descartáveis de Postgres, Kafka e Schema Registry); na CI, o `ubuntu-latest` do GitHub Actions já vem com Docker disponível.
 
-Não há um gate de cobertura mínima fixo configurado no `build.gradle` (tipo "70% ou falha o build") — a cobertura é reportada ao SonarCloud e validada pelo Quality Gate padrão da plataforma. Testes de integração ponta a ponta cobrindo o Kafka de verdade (não só o codec isoladamente) ficaram para a Task 2.4.
+Não há um gate de cobertura mínima fixo configurado no `build.gradle` (tipo "70% ou falha o build") — a cobertura é reportada ao SonarCloud e validada pelo Quality Gate padrão da plataforma.
 
 ---
 
