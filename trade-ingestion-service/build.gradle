@@ -14,7 +14,8 @@ repositories {
 
 ext {
     confluentVersion = '8.3.1'
-    testcontainersVersion = '2.0.4'
+    testcontainersVersion = '2.0.5'
+    jacksonDdatatypeJsr310Version = '2.15.2'
 }
 
 dependencies {
@@ -33,12 +34,13 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
 
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonDdatatypeJsr310Version}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
 
-    testImplementation platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}")
+    implementation platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}")
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'org.testcontainers:kafka:1.21.4'
 }
