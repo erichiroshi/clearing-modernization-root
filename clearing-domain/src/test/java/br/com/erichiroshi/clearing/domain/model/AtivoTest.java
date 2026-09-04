@@ -22,8 +22,8 @@ class AtivoTest {
             Ativo ativo = new Ativo("PETR4", "Petrobras PN");
 
             // IMPORTANTE para Cobertura: Invocar os métodos de leitura automáticos do record
-            assertThat(ativo.ticker()).isEqualTo("PETR4");
-            assertThat(ativo.nome()).isEqualTo("Petrobras PN");
+            assertThat(ativo.getTicker()).isEqualTo("PETR4");
+            assertThat(ativo.getNome()).isEqualTo("Petrobras PN");
         }
 
         @ParameterizedTest

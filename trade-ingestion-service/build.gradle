@@ -3,16 +3,6 @@ plugins {
     id 'io.spring.dependency-management'
 }
 
-// retirar depois de implementado
-bootJar {
-    enabled = false
-}
-
-jar {
-    enabled = true
-}
-
-
 description = 'Microsserviço de escrita — recebe intenções de trade, valida e persiste em PostgreSQL sob ACID, publica TradeExecutedEvent no Kafka'
 
 repositories {
@@ -23,7 +13,8 @@ repositories {
 }
 
 ext {
-    confluentVersion = '7.9.0' // confirme a versão compatível com a versão do Kafka usada no docker-compose
+    confluentVersion = '8.3.1'
+    testcontainersVersion = '2.0.4'
 }
 
 dependencies {
@@ -37,9 +28,15 @@ dependencies {
     implementation "io.confluent:kafka-avro-serializer:${confluentVersion}"
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    // Flyway cuida do schema; Hibernate só valida (ddl-auto: validate)
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    testImplementation platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}")
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
 }

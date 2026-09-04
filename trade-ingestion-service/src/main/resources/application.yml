@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: trade-ingestion-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/clearing
+    username: clearing
+    password: clearing
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway é quem cria/versiona o schema; Hibernate só valida que o
+      # mapeamento das entidades bate com o que existe no banco.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
