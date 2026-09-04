@@ -30,13 +30,16 @@ public class ExecutarTradeUseCase {
     private final CompradorRepository compradorRepository;
     private final VendedorRepository vendedorRepository;
     private final TradeRepository tradeRepository;
+    private final TradeEventPublisher tradeEventPublisher;
 
     public ExecutarTradeUseCase(CompradorRepository compradorRepository,
                                  VendedorRepository vendedorRepository,
-                                 TradeRepository tradeRepository) {
+                                 TradeRepository tradeRepository,
+                                 TradeEventPublisher tradeEventPublisher) {
         this.compradorRepository = compradorRepository;
         this.vendedorRepository = vendedorRepository;
         this.tradeRepository = tradeRepository;
+        this.tradeEventPublisher = tradeEventPublisher;
     }
 
     @Transactional
@@ -53,6 +56,10 @@ public class ExecutarTradeUseCase {
 
         compradorRepository.salvar(comprador);
         vendedorRepository.salvar(vendedor);
-        return tradeRepository.salvar(trade);
+        Trade tradeSalvo = tradeRepository.salvar(trade);
+
+        // mesma transação do Postgres: ou os dois commitam, ou nenhum
+        tradeEventPublisher.registrarEventoPendente(tradeSalvo);
+        return tradeSalvo;
     }
 }
