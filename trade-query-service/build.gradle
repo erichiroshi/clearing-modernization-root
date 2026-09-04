@@ -24,7 +24,7 @@ repositories {
 }
 
 ext {
-    confluentVersion = '7.9.0' // confirme a versão compatível com a versão do Kafka usada no docker-compose
+    confluentVersion = '8.3.1'
 }
 
 dependencies {

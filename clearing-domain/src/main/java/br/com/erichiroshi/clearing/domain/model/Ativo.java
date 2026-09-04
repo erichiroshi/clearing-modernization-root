@@ -5,29 +5,37 @@ import java.util.Objects;
 /**
  * Value object representando o ativo negociado. Igualdade por ticker.
  */
-public record Ativo(
+public final class Ativo {
 
-        String ticker,
-        String nome)
+    private final String ticker;
+    private final String nome;
 
-{
-    public Ativo {
+    public Ativo(String ticker, String nome) {
         if (ticker == null || ticker.isBlank()) {
             throw new IllegalArgumentException("ticker do ativo não pode ser vazio");
         }
+        this.ticker = ticker;
+        this.nome = nome;
         Objects.requireNonNull(nome, "nome do ativo não pode ser nulo");
+    }
+
+    public String getTicker() {
+        return ticker;
+    }
+
+    public String getNome() {
+        return nome;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (!(o instanceof Ativo ativo)) return false;
-        return ticker.equals(ativo.ticker);
+        return Objects.equals(ticker, ativo.ticker);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ticker);
+        return Objects.hashCode(ticker);
     }
 
     @Override
