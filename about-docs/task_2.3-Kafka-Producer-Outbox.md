@@ -124,3 +124,53 @@ OutboxPoller (a cada 2s)
   idempotência = `tradeId`, que já é o mesmo em republicações).
 - Sem alerta/observabilidade quando um evento vai para `FALHA` — hoje só
   fica visível numa query manual na tabela `trade_events_outbox`.
+
+---
+
+## Correções pós-entrega (encontradas via Claude Code, sessão local)
+
+Depois desta task ser entregue, uma sessão de Claude Code rodando localmente
+(com acesso real ao projeto, Docker e Gradle — algo que a sessão de chat que
+gerou o código original não tinha) executou os testes de verdade e encontrou
+4 problemas. Documentando aqui porque três deles são reais e valem entender:
+
+1. **`ExecutarTradeUseCase` não chamava `TradeEventPublisher.
+   registrarEventoPendente()`** — o código entregue originalmente nesta task
+   tinha essa chamada; ela sumiu em algum ponto do histórico de Git entre a
+   entrega e essa sessão local (provável causa: uma versão mais antiga do
+   arquivo, de antes do outbox existir, sobrepondo a versão certa num merge).
+   Não identificamos o commit exato — fica como um lembrete de conferir
+   `git diff` com atenção antes de confirmar merges, já que isso pode
+   acontecer silenciosamente em arquivos sem teste cobrindo o comportamento
+   específico.
+
+2. **Faltava `@EnableScheduling` em `TradeIngestionServiceApplication`** —
+   mesma situação do item acima: estava correto na entrega original, sumiu
+   em algum momento. Sem essa anotação, o `@Scheduled` do `OutboxPoller`
+   nunca dispara — o outbox acumula eventos `PENDENTE` para sempre, sem
+   nenhum erro visível (falha silenciosa).
+
+3. **`ConfigBeans.java` (criado depois da entrega desta task, para resolver
+   um aviso de "Could not autowire" do IntelliJ) definia um `ObjectMapper`
+   manual sem o `JavaTimeModule`** — o aviso do IDE é um falso positivo
+   conhecido em projetos Gradle multi-módulo (o Spring Boot autoconfigura um
+   `ObjectMapper` com `JavaTimeModule` já registrado; o plugin do IntelliJ
+   às vezes não enxerga isso estaticamente). Ao criar um bean manual pra
+   satisfazer o IDE, o `Instant` do `TradeEventPayload` parou de
+   serializar/desserializar corretamente — corrigido registrando o
+   `JavaTimeModule` explicitamente no bean manual. Decisão: manter o
+   `ConfigBeans.java` (em vez de removê-lo e conviver com o aviso do IDE).
+
+4. **Avro 1.12 bloqueia por padrão reflexão sobre classes específicas fora
+   de pacotes "confiáveis"** (mitigação da Apache para o CVE-2024-47561) — o `KafkaAvroSerializer` rejeitava
+   `TradeExecutedEvent` em tempo de execução. Corrigido configurando a
+   system property `org.apache.avro.SERIALIZABLE_PACKAGES` no
+   `OutboxEventProcessor`. Este é o único dos 4 achados que não tem relação
+   com histórico de Git — é uma mudança de comportamento de segurança da
+   própria biblioteca Avro 1.12, que só aparece rodando o serializer de
+   verdade contra um Schema Registry real.
+
+**Validação final:** com as 4 correções aplicadas, os 22 testes do módulo
+passam — incluindo o `TradeIngestionEndToEndIT` (Postgres + Kafka + Schema
+Registry reais via Testcontainers), confirmando que o fluxo completo do
+Outbox Pattern funciona de ponta a ponta na prática, não só no papel.

@@ -30,6 +30,15 @@ public class OutboxEventProcessor {
     private static final int MAX_TENTATIVAS = 5;
     private static final int TIMEOUT_SEGUNDOS = 5;
 
+    static {
+        // Avro 1.12+ bloqueia por padrão a reflexão sobre classes específicas
+        // fora de pacotes "confiáveis" (CVE-2024-47561). Sem isso, o
+        // AvroSchemaUtils.getSpecificDataForSchema lança SecurityException
+        // ao tentar carregar TradeExecutedEvent.
+        System.setProperty("org.apache.avro.SERIALIZABLE_PACKAGES",
+                "br.com.erichiroshi.clearing.contracts.event");
+    }
+
     private final OutboxEventJpaRepository outboxRepository;
     private final TradeRepository tradeRepository;
     private final TradeEventCodec codec;
