@@ -69,18 +69,17 @@ Este projeto reestrutura esse fluxo usando **Arquitetura Orientada a Eventos (ED
 - [x] **Task 2.3** — Producer Kafka via Transactional Outbox Pattern
 - [x] **Task 2.4** — Testes rigorosos (Mockito, mappers, integração ponta a ponta com Postgres + Kafka + Schema Registry reais)
 ### Épico 3 — Agregação, Observabilidade e Leitura (trade-query-service)
-- [ ] Task 3.1 — Consumidor Kafka com Virtual Threads (Java 25)
+- [x] **Task 3.1** — Consumidor Kafka com Virtual Threads (Java 25)
 - [ ] Task 3.2 — Modelo de leitura desacoplado (MongoDB) + API REST de consulta
 - [ ] Task 3.3 — Observabilidade (OpenTelemetry, correlação de trace entre os dois serviços)
 
-**Épico 1 e Épico 2 estão completos e liberados como [`v0.2.0`](https://github.com/erichiroshi/clearing-modernization/releases/tag/v0.2.0)** — validados de ponta a ponta contra Postgres, Kafka e Schema Registry reais (não só mocks). O `trade-query-service` ainda não existe como aplicação — o módulo Gradle está criado (`build.gradle`), mas sem código. **Não existe endpoint HTTP ainda em nenhum dos dois serviços** — o fluxo de ingestão hoje só é acionável via `ExecutarTradeUseCase` (testado por integração), não por uma API externa.
----
+**Épico 1 e Épico 2 estão completos e liberados como [`v0.2.0`](https://github.com/erichiroshi/clearing-modernization/releases/tag/v0.2.0)** — validados de ponta a ponta contra Postgres, Kafka e Schema Registry reais (não só mocks). O `trade-query-service` já consome o tópico `market.trades.v1` com Virtual Threads (Java 25), mas ainda projeta num handler stub (log) — a persistência real em MongoDB é a Task 3.2. **Não existe endpoint HTTP ainda em nenhum dos dois serviços** — os fluxos hoje só são acionáveis via use case/listener (testados por integração), não por uma API externa. Isso também é escopo da Task 3.2.---
 
 ## 🛠️ Stack Tecnológica
 
 | Categoria             | Tecnologia                          | Versão      | Papel                                                        |
 |------------------------|--------------------------------------|-------------|----------------------------------------------------------------|
-| Linguagem              | Java                                 | 25          | Virtual Threads no consumidor Kafka (Épico 3)                  |
+| Linguagem              | Java                                 | 25          | Virtual Threads no consumidor Kafka (`trade-query-service`)     |
 | Framework              | Spring Boot                         | 4.1.1       | Web, DI, Actuator, Scheduling                                  |
 | Build                  | Gradle (Groovy DSL)                  | 9.x         | Monorepo multi-módulo                                          |
 | Domínio                | Java puro (DDD/Clean Architecture)   | —           | `clearing-domain` — zero dependência de framework               |
@@ -289,6 +288,8 @@ Quando o endpoint existir, esta seção será atualizada com exemplos de request
 | `trade-ingestion-service` | `TradeEventCodecTest` | Unitário — round-trip JSON e conversão para Avro |
 | `trade-ingestion-service` | `ExecutarTradeUseCaseIT` | Integração — **Testcontainers** (PostgreSQL real, Flyway real) |
 | `trade-ingestion-service` | `TradeIngestionEndToEndIT` | **Integração ponta a ponta** — Postgres + Kafka + Schema Registry reais via Testcontainers; valida o fluxo completo desde `ExecutarTradeUseCase` até a mensagem chegar de verdade no tópico e o trade ser liquidado |
+| `trade-query-service` | `TradeExecutedEventListenerTest` | Unitário (Mockito) — mapeamento Avro → comando interno, e ack só depois de sucesso |
+| `trade-query-service` | `TradeQueryConsumerEndToEndIT` | **Integração ponta a ponta** — ConfluentKafkaContainer + Schema Registry reais; publica um evento de verdade e confirma que o listener consome |
 
 \`\`\`bash
 ./gradlew test jacocoTestReport
