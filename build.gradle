@@ -11,7 +11,7 @@ plugins {
 
 allprojects {
     group = 'br.com.erichiroshi.clearing'
-    version = '1.0.0-SNAPSHOT'
+    version = '0.3.0-SNAPSHOT'
 
     repositories {
         mavenCentral()
@@ -62,5 +62,8 @@ sonar {
     properties {
         property "sonar.projectKey", "erichiroshi_clearing-modernization"
         property "sonar.organization", "erichiroshi"
+
+        property "sonar.coverage.jacoco.xmlReportPaths",
+                subprojects.collect { "${it.layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml" }.join(",")
     }
 }
